@@ -6,6 +6,8 @@ import com.e_commerce.e_commerce.exceptions.ResourceNotFoundException;
 import com.e_commerce.e_commerce.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,5 +39,15 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    public Page<ProductDTO> findAll(Pageable page) {
+        Page<ProductEntity> productEntities = productRepository.findAll(page);
+        return productEntities.map(product -> modelMapper.map(product, ProductDTO.class));
+    }
+
+    public ProductDTO create(ProductDTO productDTO) {
+        ProductEntity productEntity = modelMapper.map(productDTO, ProductEntity.class);
+        productEntity = productRepository.save(productEntity);
+        return modelMapper.map(productEntity, ProductDTO.class);
+    }
 
 }

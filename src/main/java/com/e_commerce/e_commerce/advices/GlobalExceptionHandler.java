@@ -1,10 +1,16 @@
 package com.e_commerce.e_commerce.advices;
 
 import com.e_commerce.e_commerce.exceptions.ResourceNotFoundException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -20,10 +26,41 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleInternalServerException(Exception e) {
+        System.out.println(e);
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .message("Internal Server Error")
                 .build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<?>> handleInputValidationErrors(MethodArgumentNotValidException exception){
+        List<String> errors = exception.getBindingResult().getAllErrors().stream()
+                .map(err -> err.getDefaultMessage())
+                .collect(Collectors.toList());
+
+        ApiError apiError = ApiError.builder().status(HttpStatus.BAD_REQUEST).message("Input validation failed.").subErrors(errors).build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiResponse<?>> handleAuthenticationException(AuthenticationException ex) {
+        ApiError apiError = ApiError.builder()
+                .message(ex.getLocalizedMessage())
+                .status(HttpStatus.UNAUTHORIZED)
+                .build();
+
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<ApiResponse<?>> handleJwtException(JwtException ex) {
+        ApiError apiError = ApiError.builder()
+                .message(ex.getLocalizedMessage())
+                .status(HttpStatus.UNAUTHORIZED)
+                .build();
+
         return buildErrorResponseEntity(apiError);
     }
 
